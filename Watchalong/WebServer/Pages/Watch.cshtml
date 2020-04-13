@@ -1,0 +1,161 @@
+﻿@page
+@model WebServer.WatchModel
+@{
+    ViewData["Title"] = "Watch";
+}
+
+@section Header {
+    <link rel="stylesheet" href="~/css/watch.css" />
+}
+
+<div id="header">
+    <p id="currently-connected-to">Currently connected to <b></b></p>
+    <a href="/">Back to server list</a>
+</div>
+
+<div id="login-container" class="hidden">
+    <h1>Login:</h1>
+    <div id="login-controls">
+        <input id="username-entry" class="textbox login-textbox" type="text" placeholder="Username" />
+        <br />
+        <input id="password-entry" class="textbox login-textbox" type="password" placeholder="Password" />
+        <div id="connect-button">
+            <div>
+                <p><i class="fas fa-sign-in-alt right-margin"></i>Connect</p>
+            </div>
+        </div>
+    </div>
+    <div id="login-response-container" class="hidden">
+        <p id="login-response"></p>
+    </div>
+</div>
+
+<div id="root" class="hidden">
+    <div id="main-container">
+        <div id="content-container">
+            <p id="video-title"></p>
+            <video id="video-content" class="media-content" preload="none">
+            </video>
+            <audio id="audio-content" class="media-content" preload="metadata">
+            </audio>
+            <div id="controls-container">
+                <div id="control-buttons-container">
+                    <div id="left-control-buttons-container">
+                        <div id="left-control-buttons">
+                            <div id="playpause-button" class="button control-button play-button">
+                                <div>
+                                    <i class="fas fa-play"></i>
+                                    <i class="fas fa-pause"></i>
+                                    <i class="fas fa-spinner"></i>
+                                </div>
+                            </div>
+                            <div id="skip-button" class="button control-button">
+                                <div>
+                                    <i class="fas fa-step-forward"></i>
+                                </div>
+                            </div>
+                            <div id="timestamp">
+                                <p>0:00 / 0:00</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="right-control-buttons-container">
+                        <div id="right-control-buttons">
+                            <div id="fullscreen-button" class="button control-button expand-button">
+                                <div>
+                                    <i class="fas fa-compress"></i>
+                                    <i class="fas fa-expand"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="volume">
+                            <div id="volume-button" class="icon">
+                                <i class="fas fa-volume-up"></i>
+                            </div>
+                            <div id="volume-slider"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="position-slider-container">
+                    <div id="position-slider"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="userlist-container">
+            <h1>In Room:</h1>
+            <div id="userlist">
+                
+            </div>
+        </div>
+    </div>
+    
+
+    
+
+    <div id="queue-files-container">
+        <div id="queue-container" class="media-list-container">
+            <h1>Queue:</h1>
+            <div id="queue" class="media-list">
+                <div class="queue-entry media-list-entry">
+                    <div class="queue-entry-title-duration-container media-list-entry-title-duration-container">
+                        <div class="queue-entry-title media-list-entry-title">Title</div>
+                        <div class="queue-entry-duration media-list-entry-duration">0:00</div>
+                    </div>
+                    <div class="queue-entry-button-container media-list-entry-button-container">
+                        <div class="play-now queue-entry-button no-background">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div class="move-top queue-entry-button no-background">
+                            <i class="fas fa-angle-double-up"></i>
+                        </div>
+                        <div class="move-up queue-entry-button no-background">
+                            <i class="fas fa-angle-up"></i>
+                        </div>
+                        <div class="move-down queue-entry-button no-background">
+                            <i class="fas fa-angle-down"></i>
+                        </div>
+                        <div class="move-bottom queue-entry-button no-background">
+                            <i class="fas fa-angle-double-down"></i>
+                        </div>
+                        <div class="delete queue-entry-button no-background">
+                            <i class="fas fa-trash"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <input id="url-entry" class="textbox" type="text" placeholder="Play from a URL" />
+            <div id="download-button">
+                <div>
+                    <p><i class="fas fa-download right-margin"></i>Download</p>
+                </div>
+            </div>
+        </div>
+        <div id="files-container" class="media-list-container">
+            <h1>Available Files:</h1>
+            <div id="files" class="media-list">
+                <div class="file-entry media-list-entry">
+                    <div class="file-entry-title-duration-container media-list-entry-title-duration-container">
+                        <div class="file-entry-title media-list-entry-title">Title</div>
+                        <div class="file-entry-duration media-list-entry-duration">0:00</div>
+                    </div>
+                    <div class="file-entry-button-container media-list-entry-button-container">
+                        <div class="button file-add-queue-button">
+                            <div>
+                                Add to queue
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="~/js/watch.js"></script>
+}

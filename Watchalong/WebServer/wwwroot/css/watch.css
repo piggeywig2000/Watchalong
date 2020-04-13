@@ -1,0 +1,481 @@
+﻿#header {
+    font-size: 12px;
+    background-color: var(--background-secondary);
+    padding: 4px;
+    margin-bottom: 8px;
+}
+
+#login-container {
+    margin: 8px;
+}
+
+#login-controls {
+    margin-top: 10px;
+}
+
+.login-textbox {
+    width: 100%;
+    max-width: 200px;
+    margin: 4px 0px;
+}
+
+#connect-button {
+    width: 100px;
+    margin: 4px 0px;
+}
+
+#login-response-container {
+    border: 3px solid var(--error-dark);
+    background-color: var(--error);
+    width: 300px;
+    padding: 10px;
+    font-size: 14px;
+    margin-top: 20px;
+}
+
+#login-response {
+    color: var(--text-primary);
+}
+
+
+
+
+
+
+
+
+
+
+
+#main-container {
+    height: auto;
+    margin: 0px 8px;
+}
+
+#content-container {
+    height: auto;
+}
+
+#video-content {
+    display: block;
+    z-index: 998;
+    background-color: black;
+}
+    #video-content:not(.fullscreen) {
+        max-height: calc(100vh - 155px);
+        width: 100%;
+    }
+    #video-content.fullscreen {
+        width: 100vw;
+        height: 100vh;
+    }
+
+#video-title {
+    background-color: var(--background-secondary);
+    height: 23px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/*Chonk screens*/
+@media only screen and (min-width: 768px) {
+    #content-container {
+        width: calc(100% - 288px);
+        float: left;
+    }
+
+    #video-title {
+        font-size: 18px;
+    }
+
+    #volume-slider {
+        width: 100px;
+    }
+}
+/*Smol screens*/
+@media only screen and (max-width: 767px) {
+    #content-container {
+        width: 100%;
+    }
+
+    #video-title {
+        font-size: 14px;
+    }
+
+    #volume-slider {
+        width: 60px;
+    }
+}
+
+.fullscreen {
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    top: 0px;
+    left: 0px;
+}
+
+.fullscreen-controls {
+    position: fixed;
+    z-index: 999;
+    width: calc(100vw - 40px);
+    bottom: 0px;
+    left: 0px;
+}
+
+#audio-content {
+    display: none;
+}
+
+#controls-container {
+    padding: 10px 20px;
+    background-color: var(--background-secondary);
+}
+    #controls-container.fullscreen-controls {
+        background-color: var(--background-transparent);
+    }
+
+#control-buttons-container {
+    width: 100%;
+    height: 40px;
+}
+
+#left-control-buttons-container {
+    width: 50%;
+    float: left;
+}
+
+#left-control-buttons {
+    margin: auto;
+    float: left;
+}
+
+.control-button {
+    border-radius: 200px;
+    font-size: 20px;
+    width: 40px;
+}
+    .control-button > div {
+        border-radius: 200px;
+    }
+
+#playpause-button {
+    float: left;
+}
+
+    #playpause-button.pause-button > div > i:first-child {
+        display: none;
+    }
+    #playpause-button.play-button > div > i:nth-child(2) {
+        display: none;
+    }
+
+    #playpause-button.buffer-button > div > i:not(:last-child) {
+        display: none;
+    }
+    #playpause-button.buffer-button > div > i:last-child {
+        animation: spin-animation 1s linear 0s infinite normal;
+    }
+    #playpause-button:not(.buffer-button) > div > i:last-child {
+        display: none;
+    }
+
+@keyframes spin-animation {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(359deg);
+    }
+}
+
+#skip-button {
+    float: left;
+    margin: 0px 8px;
+}
+
+#timestamp {
+    margin-top: 11px;
+    margin: 11px 8px 0px 8px;
+    font-size: 14px;
+    float: left;
+}
+
+#right-control-buttons-container {
+    width: 50%;
+    float: left;
+}
+
+#right-control-buttons {
+    width: 40px;
+    float: right;
+}
+
+#volume {
+    float: right;
+    margin-top: 10px;
+    margin-right: 10px;
+}
+
+#volume-button {
+    width: 20px;
+    height: 20px;
+    float: left;
+    font-size: 20px;
+    transform: translateY(-2px);
+    margin-right: 10px;
+}
+
+#volume-slider {
+    float: left;
+    margin-top: 5px;
+}
+
+.expand-button > div > i:first-of-type {
+    display: none;
+}
+
+.compress-button > div > i:last-of-type {
+    display: none;
+}
+
+#position-slider-container {
+    margin-top: 10px;
+}
+
+
+
+
+
+
+#userlist-container {
+    background-color: var(--background-secondary);
+}
+    #userlist-container > h1 {
+        padding: 8px;
+    }
+
+#userlist {
+    overflow-y: auto;
+}
+
+.user {
+    padding: 8px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    color: var(--text-primary);
+}
+    .user.user-buffer {
+        color: var(--error);
+    }
+        .user.user-buffer.user-nodata {
+            color: var(--error-dark);
+        }
+
+/*Chonk screens*/
+@media only screen and (min-width: 768px) {
+    #userlist-container {
+        width: 280px;
+        height: 100%;
+        right: 0px;
+        top: 0px;
+        float: right;
+    }
+
+    #userlist {
+        margin: 0;
+        right: 0px;
+        max-height: calc(100% - 61px);
+    }
+
+    .user {
+        font-size: 18px;
+    }
+}
+/*Smol screens*/
+@media only screen and (max-width: 767px) {
+    #userlist-container {
+        width: 100%;
+        margin: 8px 0px;
+    }
+
+    #userlist {
+        max-height: 350px;
+    }
+
+    .user {
+        font-size: 16px;
+    }
+}
+
+
+
+
+
+
+
+
+#queue-files-container {
+    margin: 0px 8px;
+}
+
+.media-list-container {
+    background-color: var(--background-secondary);
+    margin: 8px 0px;
+}
+
+/*Chonk screens*/
+@media only screen and (min-width: 768px) {
+    #queue-files-container {
+        height: 600px;
+    }
+
+    #queue-container {
+        float: left;
+    }
+
+    #files-container {
+        float: right;
+    }
+
+    .media-list-container {
+        width: calc((100% - 8px) * 0.5);
+        height: calc(100% - 16px);
+    }
+}
+/*Smol screens*/
+@media only screen and (max-width: 767px) {
+    #queue-files-container {
+        height: 800px;
+    }
+
+    .media-list-container {
+        height: calc((100% - 8px) * 0.5);
+    }
+}
+
+.media-list-container > h1 {
+    padding: 8px;
+}
+
+.media-list {
+    height: calc(100% - 53px);
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.media-list-entry {
+    height: auto;
+    margin: 8px;
+    background-color: var(--background-primary);
+    padding: 8px;
+}
+
+.media-list-entry-title-duration-container {
+    height: auto;
+    overflow: hidden;
+}
+
+.media-list-entry-title {
+    font-size: 16px;
+    color: var(--text-primary);
+    max-width: calc(100% - 64px);
+    float: left;
+}
+
+.media-list-entry-duration {
+    font-size: 13px;
+    color: var(--text-secondary);
+    width: 56px;
+    margin-top: 4px;
+    margin-left: 8px;
+    float: left;
+}
+
+.media-list-entry-button-container {
+    height: 22px;
+    margin-top: 8px;
+}
+
+.queue-entry-button {
+    width: 22px;
+    height: 22px;
+    font-size: 22px;
+    margin: 0px 8px;
+    float: left;
+}
+    .queue-entry-button:first-child {
+        margin-left: 0px;
+    }
+    .queue-entry-button:last-child {
+        margin-right: 0px;
+        float: right;
+    }
+
+/*Placeholder list item is hidden*/
+.media-list-entry:first-child {
+    display: none;
+}
+/*First queue item has no move up*/
+.queue-entry:nth-child(2) > .queue-entry-button-container > .move-top {
+    display: none;
+}
+.queue-entry:nth-child(2) > .queue-entry-button-container > .move-up {
+    display: none;
+}
+/*Last queue item has no move down*/
+.queue-entry:last-child > .queue-entry-button-container > .move-bottom {
+    display: none;
+}
+.queue-entry:last-child > .queue-entry-button-container > .move-down {
+    display: none;
+}
+/*Second to first queue item has no move top*/
+.queue-entry:nth-child(3) > .queue-entry-button-container > .move-top {
+    display: none;
+}
+/*Second to last queue item has no move bottom*/
+.queue-entry:nth-last-child(2) > .queue-entry-button-container > .move-bottom {
+    display: none;
+}
+
+/*Overrides*/
+#queue {
+    height: calc(100% - 97px);
+}
+
+
+.file-entry-button-container {
+    height: 25px;
+}
+
+.file-add-queue-button {
+    width: 100px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+    .file-add-queue-button > div {
+        border-radius: 4px;
+        padding: 4px;
+    }
+
+
+
+#url-entry {
+    width: calc(100% - 34px - 128px);
+    margin: 8px 4px 8px 8px;
+    float: left;
+}
+
+#download-button {
+    height: 36px;
+    float: right;
+    width: 120px;
+    margin: 8px 8px 8px 4px;
+}
+
+.download-tag {
+    color: var(--text-secondary);
+}

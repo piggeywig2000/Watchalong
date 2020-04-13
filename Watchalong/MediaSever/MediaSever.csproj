@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\ConfigParser.cs" Link="ConfigParser.cs" />
+    <Compile Include="..\Shared\ConsoleLog.cs" Link="ConsoleLog.cs" />
+    <Compile Include="..\Shared\Helpful.cs" Link="Helpful.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediaInfo.Wrapper" Version="19.9.2" />
+    <PackageReference Include="Network" Version="6.1.4.20" />
+    <PackageReference Include="RunProcessAsTask" Version="1.2.4" />
+    <PackageReference Include="YamlDotNet" Version="8.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebMediaLink\WebMediaLink.csproj" />
+  </ItemGroup>
+
+</Project>

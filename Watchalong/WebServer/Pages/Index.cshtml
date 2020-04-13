@@ -1,0 +1,33 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Watchalong: Server List";
+}
+
+@section Header {
+    <link rel="stylesheet" href="~/css/index.css" />
+}
+
+<div id="page-header">
+    <p>Select a Media Server</p>
+    <p id="server-count">Server count: 0</p>
+</div>
+<div id="servers-container">
+    <div class="server">
+        <p class="server-name">Server name</p>
+        <img class="server-image" src="https://via.placeholder.com/400x200/939393/383838?text=No+server+image+:(" />
+        <div class="server-info">
+            <p class="server-user-count"><i class="fas fa-user right-margin"></i>In room: 0</p>
+            <p class="server-has-password"><i class="fas fa-lock right-margin"></i>Has password</p>
+        </div>
+        <div class="server-join">
+            <div>
+                <p><i class="fas fa-sign-in-alt right-margin"></i>Join</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/index.js"></script>
+}
