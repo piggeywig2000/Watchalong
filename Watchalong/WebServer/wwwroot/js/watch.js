@@ -7,6 +7,9 @@ var isPlaying = false;
 var lastSeekPosition = 0;
 var isBuffering = false;
 var queue = [];
+var subtitleFonts = [];
+var subtitles = [];
+var subtitleInstance = null;
 
 //Get url parameter function
 $.urlParam = function (name) {
@@ -123,17 +126,80 @@ function closeFullscreen() {
     }
 }
 
+//Update subtitles function
+function UpdateSubtitles(subtitlesToChangeTo) {
+    //If it's null, kill the subs
+    if (subtitlesToChangeTo == null) {
+        if (subtitleInstance != null) {
+            subtitleInstance.dispose();
+            subtitleInstance = null;
+        }
+    }
+    //Otherwise, load new subs
+    else {
+        if (subtitleInstance != null) {
+            subtitleInstance.dispose();
+            subtitleInstance = null;
+        }
+
+        subtitleInstance = new SubtitlesOctopus({
+            video: videoPlayer,
+            subUrl: subtitlesToChangeTo.Url,
+            fonts: subtitleFonts,
+            workerUrl: "/lib/JavascriptSubtitlesOctopus/dist/subtitles-octopus-worker.js"
+        });
+    }
+}
+
+//Create subtitle instance
+
+
+//Settings button
+$("#settings-button").button();
+
+//On click, show the settings panel
+$("#settings-button").click(function () {
+    $(".faded-overlay").removeClass("hidden");
+    $("#settings-container").removeClass("hidden");
+});
+
+//Settings window
+
+//Close button
+$("#settings-close-button").button();
+$("#settings-close-button").click(function () {
+    $(".faded-overlay").addClass("hidden");
+    $("#settings-container").addClass("hidden");
+});
+
+//Subtitles combobox on change
+$("#subtitle-track").change(function () {
+    var selectedIndex = $(this).prop("selectedIndex");
+
+    //If it's disabled, remove the subs
+    if (selectedIndex == 0) {
+        UpdateSubtitles(null);
+    }
+    //If it's set to a sub track, create subs for it
+    else {
+        UpdateSubtitles(subtitles[selectedIndex - 1]);
+    }
+});
+
 //Volume slider
 $("#volume-slider").slider({
     min: 0,
     max: 100,
     value: 100,
     range: "min",
+    orientation: "vertical",
     slide: function (event, ui) {
         //Set the volume of the active media player
         activeMediaObj.volume = ui.value / 100;
     }
 });
+
+$("#volume").hover(function () { $("#volume-slider-container").removeClass("hidden"); }, function () { $("#volume-slider-container").addClass("hidden"); });
 
 //Create playpause button
 $("#playpause-button").button();
@@ -368,6 +434,9 @@ connection.on("CurrentStateUpdated", function (jsonData) {
         }
     });
 
+    //Update the fonts
+    subtitleFonts = data.SubtitleFonts;
+
     //Update the media information. If anything changes, we need to send a user state update
     var hasAnythingChanged = false;
 
@@ -489,6 +558,32 @@ connection.on("CurrentStateUpdated", function (jsonData) {
 
         //Update the seek bar
         UpdatePositionSlider();
+    }
+
+    //If the available subtitles has changed
+    var hasSubtitlesChanged = true;
+    if (subtitles.length == data.Subtitles.length) {
+        hasSubtitlesChanged = false;
+        for (i = 0; i < subtitles.length; i++) {
+            if (subtitles[i].Url != data.Subtitles[i].Url) {
+                hasSubtitlesChanged = true;
+            }
+        }
+    }
+    if (hasSubtitlesChanged) {
+        hasAnythingChanged = true;
+
+        //Change the values
+        $("#subtitle-track > option:not(:first-child)").remove();
+        for (i = 0; i < data.Subtitles.length; i++) {
+            $("#subtitle-track").append(new Option(data.Subtitles[i].Name));
+        }
+
+        //Overwrite previous variables
+        subtitles = data.Subtitles;
+
+        //Kill the subs
+        UpdateSubtitles(null);
     }
 
     //If the buffer state has changed

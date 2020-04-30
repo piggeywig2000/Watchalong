@@ -43,6 +43,16 @@ namespace WebServer.SignalR.Server
         public double LastSeekPosition { get; set; } = 0;
 
         /// <summary>
+        /// The available subtitles for the currently playing media
+        /// </summary>
+        public Subtitle[] Subtitles { get; set; } = new Subtitle[0];
+
+        /// <summary>
+        /// The URLs of the available subtitle fonts
+        /// </summary>
+        public string[] SubtitleFonts { get; set; } = new string[0];
+
+        /// <summary>
         /// Whether the media player is currently buffering
         /// </summary>
         public bool IsBuffering { get; set; } = false;
@@ -119,5 +129,18 @@ namespace WebServer.SignalR.Server
         /// Whether the media item is available to play
         /// </summary>
         public bool IsAvailable { get; set; } = true;
+    }
+
+    public class Subtitle
+    {
+        /// <summary>
+        /// The URL of the subtitle file
+        /// </summary>
+        public string Url { get; set; } = null;
+
+        /// <summary>
+        /// The name of the subtitle
+        /// </summary>
+        public string Name { get; set; } = null;
     }
 }

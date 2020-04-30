@@ -30,10 +30,37 @@
     </div>
 </div>
 
+<div id="settings-container" class="hidden">
+    <div id="settings-header">
+        <h1>Settings</h1>
+        <div id="settings-close-button">
+            <i class="fas fa-window-close"></i>
+        </div>
+    </div>
+
+    <div id="settings">
+        <label for="subtitle-track">Subtitle Track:</label>
+        <select name="subtitle-track" id="subtitle-track">
+            <option selected>Disabled</option>
+        </select>
+    </div>
+</div>
+
+<div class="faded-overlay hidden"></div>
+
 <div id="root" class="hidden">
     <div id="main-container">
         <div id="content-container">
-            <p id="video-title"></p>
+            <div id="video-top-bar">
+                <p id="video-title"></p>
+                <div id="top-bar-buttons">
+                    <div id="settings-button" class="button top-bar-button">
+                        <div>
+                            <i class="fas fa-cog"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <video id="video-content" class="media-content" preload="none">
             </video>
             <audio id="audio-content" class="media-content" preload="metadata">
@@ -54,9 +81,10 @@
                                     <i class="fas fa-step-forward"></i>
                                 </div>
                             </div>
-                            <div id="timestamp">
-                                <p>0:00 / 0:00</p>
-                            </div>
+                        </div>
+
+                        <div id="timestamp">
+                            <p>0:00 / 0:00</p>
                         </div>
                     </div>
 
@@ -74,7 +102,9 @@
                             <div id="volume-button" class="icon">
                                 <i class="fas fa-volume-up"></i>
                             </div>
-                            <div id="volume-slider"></div>
+                            <div id="volume-slider-container" class="hidden">
+                                <div id="volume-slider"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -88,13 +118,13 @@
         <div id="userlist-container">
             <h1>In Room:</h1>
             <div id="userlist">
-                
+
             </div>
         </div>
     </div>
-    
 
-    
+
+
 
     <div id="queue-files-container">
         <div id="queue-container" class="media-list-container">
@@ -157,5 +187,6 @@
 
 
 @section Scripts {
+    <script src="~/lib/JavascriptSubtitlesOctopus/dist/subtitles-octopus.js"></script>
     <script src="~/js/watch.js"></script>
 }

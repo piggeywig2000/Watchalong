@@ -43,8 +43,13 @@ namespace MediaSever
             Directory.CreateDirectory(config.PathToDownload);
             Directory.CreateDirectory(config.PathToDownload + "\\incomplete");
 
+            //Delete and create the subtitles folder
+            if (Directory.Exists(config.PathToSubtitle))
+                Directory.Delete(config.PathToSubtitle, true);
+            Directory.CreateDirectory(config.PathToSubtitle);
+
             //Connect to webserver
-            WebMediaClient serverLink = new WebMediaClient(config.WebserverIp, config.WebserverPort, config.HttpHostIp, config.HttpHostPort, config.Name, config.Password, config.PathToMedia, config.PathToDownload);
+            WebMediaClient serverLink = new WebMediaClient(config.WebserverIp, config.WebserverPort, config.HttpHostIp, config.HttpHostPort, config.Name, config.Password, config.PathToMedia, config.PathToDownload, config.PathToSubtitle);
             serverLink.ConnectToWebserver().Wait();
             Task.Delay(-1, serverLink.CancelToken).Wait();
 

@@ -112,6 +112,11 @@ namespace WebServer
             } }
 
         /// <summary>
+        /// The available fonts for subtitles
+        /// </summary>
+        private string[] SubtitleFonts { get; set; } = new string[0];
+
+        /// <summary>
         /// Keeps track of the current position in the media
         /// </summary>
         private SettableStopwatch PositionTracker { get; } = new SettableStopwatch();
@@ -184,9 +189,12 @@ namespace WebServer
             //Set the files
             foreach(PlayableFile file in response.MediaUrls)
             {
-                ServerFile fileToAdd = new ServerFile(file.VideoUrl, file.AudioUrl, file.Title, file.Duration, file.IsAvailable, FileType.Offline);
+                ServerFile fileToAdd = new ServerFile(file.VideoUrl, file.AudioUrl, file.Title, file.Subtitles, file.Duration, file.IsAvailable, FileType.Offline);
                 Files.Add(fileToAdd.UUID, fileToAdd);
             }
+
+            //Set the fonts
+            SubtitleFonts = response.SubtitleFonts;
 
             ResetPlayback();
 
@@ -264,6 +272,9 @@ namespace WebServer
             //Send the request
             GetInfoResponse response = await Connection.SendAsync<GetInfoResponse>(new GetInfoRequest());
 
+            //Set the fonts
+            SubtitleFonts = response.SubtitleFonts;
+
             //Parse response
             List<ServerFile> filesToAdd = new List<ServerFile>();
             List<ServerFile> filesToRemove = new List<ServerFile>();
@@ -274,7 +285,7 @@ namespace WebServer
             //Add the files in the response to the filesToAdd
             foreach (PlayableFile file in response.MediaUrls)
             {
-                filesToAdd.Add(new ServerFile(file.VideoUrl, file.AudioUrl, file.Title, file.Duration, file.IsAvailable, file.Type));
+                filesToAdd.Add(new ServerFile(file.VideoUrl, file.AudioUrl, file.Title, file.Subtitles, file.Duration, file.IsAvailable, file.Type));
             }
 
             //Iterate over our current 
@@ -505,11 +516,25 @@ namespace WebServer
 
             if (CurrentMediaUuid != int.MaxValue)
             {
-                info.CurrentVideoPath = Files[Queue[0]].VideoUrl;
-                info.CurrentAudioPath = Files[Queue[0]].AudioUrl;
-                info.MediaTitle = Files[Queue[0]].Title;
-                info.Duration = Files[Queue[0]].Duration;
+                ServerFile currentFile = Files[Queue[0]];
+                info.CurrentVideoPath = currentFile.VideoUrl;
+                info.CurrentAudioPath = currentFile.AudioUrl;
+                info.MediaTitle = currentFile.Title;
+                info.Duration = currentFile.Duration;
+
+                //Add subtitles
+                info.Subtitles = new SignalR.Server.Subtitle[currentFile.Subtitles.Length];
+                for (int i = 0; i < info.Subtitles.Length; i++)
+                {
+                    info.Subtitles[i] = new SignalR.Server.Subtitle
+                    {
+                        Url = currentFile.Subtitles[i].Url,
+                        Name = "[" + currentFile.Subtitles[i].Language + "] " + currentFile.Subtitles[i].Name
+                    };
+                }
             }
+
+            info.SubtitleFonts = SubtitleFonts;
 
             //Set users
             info.Users = new SignalR.Server.User[Users.Count];

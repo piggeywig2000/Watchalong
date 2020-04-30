@@ -109,11 +109,23 @@ i.right-margin {
 
 .ui-slider {
     background-color: var(--background-tertiary);
-    height: 10px;
     position: relative;
     border-radius: 10px;
     overflow-x: hidden;
 }
+
+.ui-slider-horizontal {
+    height: 10px;
+}
+
+.ui-slider-vertical {
+    width: 10px;
+}
+    .ui-slider-vertical > .ui-slider-range {
+        width: 100%;
+        position: absolute;
+        bottom: 0px;
+    }
 
 .ui-slider-range {
     background-color: var(--interactive-normal);
@@ -130,4 +142,14 @@ i.right-margin {
 
 .hidden {
     display: none;
+}
+
+.faded-overlay {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
 }

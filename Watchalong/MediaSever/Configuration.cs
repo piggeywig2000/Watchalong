@@ -48,6 +48,12 @@ namespace MediaSever
         public string PathToDownload { get; set; } = Helpful.GetExecutingDirectory() + "\\download";
 
         /// <summary>
+        /// The root folder containing the subtitle files
+        /// </summary>
+        [YamlMember(Alias = "Path to folder containing subtitle files")]
+        public string PathToSubtitle { get; set; } = Helpful.GetExecutingDirectory() + "\\subtitle";
+
+        /// <summary>
         /// The IP to host the media server on
         /// </summary>
         [YamlMember(Alias = "IP for HTTP server")]

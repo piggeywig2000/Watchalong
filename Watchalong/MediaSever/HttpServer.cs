@@ -34,6 +34,11 @@ namespace MediaSever
         private string DownloadFilesPath { get; }
 
         /// <summary>
+        /// The path to the folder containing the subtitle files
+        /// </summary>
+        private string SubtitleFilesPath { get; }
+
+        /// <summary>
         /// The http server object
         /// </summary>
         private HttpListener Server { get; set; }
@@ -54,6 +59,11 @@ namespace MediaSever
         public string[] AvailableDownloadFiles { get; set; } = new string[0];
 
         /// <summary>
+        /// The file names of the downloaded media files
+        /// </summary>
+        public string[] AvailableSubtitleFiles { get; set; } = new string[0];
+
+        /// <summary>
         /// Whether we have an image
         /// </summary>
         public bool HasImage { get; } = false;
@@ -65,13 +75,15 @@ namespace MediaSever
         /// <param name="port">The port to host on</param>
         /// <param name="pathToMediaFiles">The location of the folder containing the media files</param>
         /// <param name="pathToDownloadFiles">The location of the folder containing the download files</param>
+        /// <param name="pathToSubtitleFiles">The location of the folder containing the subtitle files</param>
         /// <param name="cancel">The cancellation token that halts the server</param>
-        public HttpServer(string ip, ushort port, string pathToMediaFiles, string pathToDownloadFiles, CancellationToken cancel)
+        public HttpServer(string ip, ushort port, string pathToMediaFiles, string pathToDownloadFiles, string pathToSubtitleFiles, CancellationToken cancel)
         {
             Ip = ip;
             Port = port;
             MediaFilesPath = pathToMediaFiles;
             DownloadFilesPath = pathToDownloadFiles;
+            SubtitleFilesPath = pathToSubtitleFiles;
 
             CancelToken = cancel;
 
@@ -150,7 +162,7 @@ namespace MediaSever
             string fileName;
             string[] arrayToSearchIn;
 
-            //Check whether it's media or download or server image
+            //Check whether it's media or download or subtitle or server image
             if (request.Url.LocalPath.StartsWith("/media/"))
             {
                 fileName = request.Url.LocalPath.Substring(7);
@@ -162,6 +174,12 @@ namespace MediaSever
                 fileName = request.Url.LocalPath.Substring(10);
                 filePath = Path.Combine(DownloadFilesPath, fileName);
                 arrayToSearchIn = AvailableDownloadFiles;
+            }
+            else if (request.Url.LocalPath.StartsWith("/subtitle/"))
+            {
+                fileName = request.Url.LocalPath.Substring(10);
+                filePath = Path.Combine(SubtitleFilesPath, fileName);
+                arrayToSearchIn = AvailableSubtitleFiles;
             }
             else if (request.Url.LocalPath == "/server-image.png")
             {

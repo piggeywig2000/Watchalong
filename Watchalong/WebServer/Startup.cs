@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -38,7 +39,29 @@ namespace WebServer
                 app.UseExceptionHandler("/Error");
             }
 
-            app.UseStaticFiles();
+            Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+
+            provider.Mappings[".data"] = "";
+
+            app.UseStaticFiles(new StaticFileOptions 
+            {
+                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")),
+                RequestPath = "",
+                ContentTypeProvider = provider
+            });
+
+            /*app.UseStaticFiles(new StaticFileOptions 
+            {
+                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+                    Path.Join(Directory.GetCurrentDirectory(), "wwwroot", "lib", "JavascriptSubtitlesOctopus", "dist")),
+                RequestPath = "/lib/JavascriptSubtitlesOctopus/dist"
+            });*/
+            /*app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+                    Path.Join(@"D:\My Files\Documents\teast")),
+                RequestPath = "/STATIC"
+            });*/
 
             app.UseRouting();
 

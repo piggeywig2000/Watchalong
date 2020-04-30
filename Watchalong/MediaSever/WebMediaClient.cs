@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -55,6 +56,11 @@ namespace MediaSever
         private string DownloadFilesPath { get; }
 
         /// <summary>
+        /// The path to the folder containing the download files
+        /// </summary>
+        private string SubtitleFilesPath { get; }
+
+        /// <summary>
         /// The connection to the webserver
         /// </summary>
         private TcpConnection WebServer { get; set; } = null;
@@ -68,6 +74,11 @@ namespace MediaSever
         /// A list of all the available files
         /// </summary>
         private List<PlayableFile> Files { get; set; } = new List<PlayableFile>();
+
+        /// <summary>
+        /// The subtitle fonts available
+        /// </summary>
+        private string[] SubtitleFonts { get; set; } = new string[0];
 
         /// <summary>
         /// Provides methods for downloading media
@@ -95,7 +106,8 @@ namespace MediaSever
         /// <param name="password">The password of the media server</param>
         /// <param name="pathToMediaFiles">The location of the folder containing the media files</param>
         /// <param name="pathToDownloadFiles">The location of the folder containing the download files</param>
-        public WebMediaClient(string ip, ushort port, string httpIp, ushort httpPort, string name, string password, string pathToMediaFiles, string pathToDownloadFiles)
+        /// <param name="pathToSubtitleFiles">The location of the folder containing the subtitle files</param>
+        public WebMediaClient(string ip, ushort port, string httpIp, ushort httpPort, string name, string password, string pathToMediaFiles, string pathToDownloadFiles, string pathToSubtitleFiles)
         {
             WebserverIp = ip;
             WebserverPort = port;
@@ -105,6 +117,7 @@ namespace MediaSever
             Password = password;
             MediaFilesPath = pathToMediaFiles;
             DownloadFilesPath = pathToDownloadFiles;
+            SubtitleFilesPath = pathToSubtitleFiles;
 
             //Use the .exe if windows, use the . nothing otherwise
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
@@ -117,7 +130,7 @@ namespace MediaSever
             }
 
             //Create the media server
-            MediaServer = new HttpServer(httpIp, httpPort, pathToMediaFiles, pathToDownloadFiles, CancelTokenSource.Token);
+            MediaServer = new HttpServer(httpIp, httpPort, pathToMediaFiles, pathToDownloadFiles, pathToSubtitleFiles, CancelTokenSource.Token);
 
             //Populate the media server's list of available files
             RescanForFiles();
@@ -215,7 +228,7 @@ namespace MediaSever
                 imageUrl = "http://" + MediaserverIp + ":" + MediaserverPort + "/server-image.png";
             }
 
-            connection.Send(new GetInfoResponse(Name, Password, imageUrl, Files.ToArray(), packet));
+            connection.Send(new GetInfoResponse(Name, Password, imageUrl, Files.ToArray(), SubtitleFonts, packet));
         }
 
         /// <summary>
@@ -229,6 +242,11 @@ namespace MediaSever
 
             string[] filesFound = Directory.GetFiles(MediaFilesPath, "*.*", SearchOption.TopDirectoryOnly);
 
+            //Delete and create the subtitles folder
+            if (Directory.Exists(SubtitleFilesPath))
+                Directory.Delete(SubtitleFilesPath, true);
+            Directory.CreateDirectory(SubtitleFilesPath);
+
             //Repopulate playable file array
             List<PlayableFile> newMediaFiles = new List<PlayableFile>();
 
@@ -239,7 +257,7 @@ namespace MediaSever
                 {
                     if (File.Exists(DownloadFilesPath + "\\" + Path.GetFileName(file.VideoUrl)) || File.Exists(DownloadFilesPath + "\\" + Path.GetFileName(file.AudioUrl)))
                     {
-                        newMediaFiles.Add(new PlayableFile(file.VideoUrl, file.AudioUrl, file.Title, file.Duration, true, FileType.Downloaded));
+                        newMediaFiles.Add(new PlayableFile(file.VideoUrl, file.AudioUrl, file.Title, file.Subtitles, file.Duration, true, FileType.Downloaded));
                         if (!file.IsAvailable)
                         {
                             hasAnythingChanged = true;
@@ -264,6 +282,8 @@ namespace MediaSever
                 //Check if it's audio or video
                 MediaInfoWrapper wrapper = new MediaInfoWrapper(file);
 
+                //Ffmpeg command: ffmpeg -hide_banner -loglevel panic -i "Place to Place - S01E01 - Here ⇔ There_S01E01.mkv" -map 0:2 -f s16le -scodec ass pipe:1
+
                 //Check that we have media
                 if (wrapper.AudioStreams.Count == 0 && wrapper.VideoStreams.Count == 0)
                 {
@@ -272,14 +292,28 @@ namespace MediaSever
 
                 string fileName = Path.GetFileName(file);
 
-                //We have media. Check if it's audio or video
-                if (wrapper.HasVideo)
+                //Get the subtitles
+                SubtitleInfo[] subtitles;
+                if (wrapper.HasSubtitles)
                 {
-                    newMediaFiles.Add(new PlayableFile("http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, "", fileName, wrapper.Duration / 1000.0, true, FileType.Offline));
+                    //Extract fonts
+                    ExtractAllFonts(file);
+                    subtitles = ExtractAllSubtitles(file, wrapper.Subtitles.ToList());
                 }
                 else
                 {
-                    newMediaFiles.Add(new PlayableFile("", "http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, fileName, wrapper.Duration / 1000.0, true, FileType.Offline));
+                    subtitles = new SubtitleInfo[0];
+
+                }
+
+                //We have media. Check if it's audio or video
+                if (wrapper.HasVideo)
+                {
+                    newMediaFiles.Add(new PlayableFile("http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, "", fileName, subtitles, wrapper.Duration / 1000.0, true, FileType.Offline));
+                }
+                else
+                {
+                    newMediaFiles.Add(new PlayableFile("", "http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, fileName, subtitles, wrapper.Duration / 1000.0, true, FileType.Offline));
                 }
             }
 
@@ -332,8 +366,10 @@ namespace MediaSever
         {
             List<string> mediaFiles = new List<string>();
             List<string> downloadFiles = new List<string>();
+            List<string> subtitleFiles = new List<string>();
 
-            foreach(PlayableFile file in Files)
+            //Add the offline and downloaded files
+            foreach (PlayableFile file in Files)
             {
                 if (!file.IsAvailable) continue;
 
@@ -352,8 +388,46 @@ namespace MediaSever
                 }
             }
 
+            //Add the fonts in the subtitle folder
+            UpdateAvailableFonts();
+            foreach (string file in SubtitleFonts)
+            {
+                subtitleFiles.Add(Path.GetFileName(file));
+            }
+
+            //Add the ass files in the subtitle folder
+            string[] filesInSubtitleFolder = Directory.GetFiles(SubtitleFilesPath, "*.ass", SearchOption.TopDirectoryOnly);
+            foreach (string file in filesInSubtitleFolder)
+            {
+                subtitleFiles.Add(Path.GetFileName(file));
+            }
+
             MediaServer.AvailableMediaFiles = mediaFiles.ToArray();
             MediaServer.AvailableDownloadFiles = downloadFiles.ToArray();
+            MediaServer.AvailableSubtitleFiles = subtitleFiles.ToArray();
+        }
+
+        /// <summary>
+        /// Update the available subtitle fonts by looking through the subtitle folder for fonts
+        /// </summary>
+        private void UpdateAvailableFonts()
+        {
+            List<string> fonts = new List<string>();
+
+            string[] filesInSubtitleFolder = Directory.GetFiles(SubtitleFilesPath, "*.*", SearchOption.TopDirectoryOnly);
+            foreach (string file in filesInSubtitleFolder)
+            {
+                string extension = Path.GetExtension(file).ToLower();
+                if (extension == ".ttf" ||
+                    extension == ".otf" ||
+                    extension == ".woff" ||
+                    extension == ".woff2")
+                {
+                    fonts.Add("http://" + MediaserverIp + ":" + MediaserverPort + "/subtitle/" + Path.GetFileName(file));
+                }
+            }
+
+            SubtitleFonts = fonts.ToArray();
         }
 
         /// <summary>
@@ -405,7 +479,7 @@ namespace MediaSever
                 httpAudioUrl = "http://" + MediaserverIp + ":" + MediaserverPort + "/download/" + uuid + "." + info.Extension;
             }
 
-            PlayableFile newFile = new PlayableFile(httpVideoUrl, httpAudioUrl, info.Title, info.Duration, false, FileType.Downloaded);
+            PlayableFile newFile = new PlayableFile(httpVideoUrl, httpAudioUrl, info.Title, new SubtitleInfo[0], info.Duration, false, FileType.Downloaded);
 
             //Add it to the list of files
             Files.Add(newFile);
@@ -435,6 +509,74 @@ namespace MediaSever
 
             //Return whether it was success
             return isSuccess;
+        }
+
+        /// <summary>
+        /// Extracts all the fonts from the media file
+        /// </summary>
+        /// <param name="mediaFilePath">The media file to extract fonts from</param>
+        private void ExtractAllFonts(string mediaFilePath)
+        {
+            //Fonts: ffmpeg -y -hide_banner -loglevel panic -dump_attachment:t "" -i "D:\My Files\Documents\GitHub\Watchalong\Watchalong\MediaSever\bin\Debug\netcoreapp3.1\test\Place to Place - S01E01 - Here ⇔ There_S01E01.mkv"
+            //Run in subtitle folder
+            Process extractProcess = new Process();
+            extractProcess.StartInfo = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                Arguments = "-y -hide_banner -loglevel panic -dump_attachment:t \"\" -i \"" + mediaFilePath + "\"",
+                WorkingDirectory = SubtitleFilesPath
+            };
+            extractProcess.Start();
+            extractProcess.WaitForExit();
+        }
+
+        private int currentSubtitleUuid = 0;
+        /// <summary>
+        /// Get the subtitles from a media file
+        /// </summary>
+        /// <param name="mediaFilePath">The path to the media file</param>
+        /// <param name="subtitles">The subtitles information</param>
+        /// <returns>An array of subtitle information represeting all the subtitles that were extracted</returns>
+        private SubtitleInfo[] ExtractAllSubtitles(string mediaFilePath, List<MediaInfo.Model.SubtitleStream> subtitles)
+        {
+            List<SubtitleInfo> returnValue = new List<SubtitleInfo>();
+
+            foreach (MediaInfo.Model.SubtitleStream stream in subtitles)
+            {
+                if (stream.Codec == MediaInfo.Model.SubtitleCodec.Ass ||
+                    stream.Codec == MediaInfo.Model.SubtitleCodec.TextAss ||
+                    stream.Codec == MediaInfo.Model.SubtitleCodec.Ssa ||
+                    stream.Codec == MediaInfo.Model.SubtitleCodec.TextSsa)
+                {
+                    //Set metadata
+                    SubtitleInfo valueToAdd = new SubtitleInfo();
+                    valueToAdd.Name = stream.Name;
+                    valueToAdd.Language = stream.Language;
+                    valueToAdd.CodecId = (int)stream.Codec;
+
+                    //Set url
+                    valueToAdd.Url = "http://" + MediaserverIp + ":" + MediaserverPort + "/subtitle/" + currentSubtitleUuid + ".ass";
+
+                    //Extract using ffmpeg
+                    Process extractProcess = new Process();
+                    extractProcess.StartInfo = new ProcessStartInfo()
+                    {
+                        FileName = "ffmpeg",
+                        Arguments = "-y -hide_banner -loglevel panic -i \"" + mediaFilePath + "\" -map 0:" + stream.StreamNumber + " \"" + SubtitleFilesPath + "/" + currentSubtitleUuid.ToString() + ".ass" + "\"",
+                        WorkingDirectory = SubtitleFilesPath
+                    };
+                    extractProcess.Start();
+                    extractProcess.WaitForExit();
+
+                    //Increase uuid
+                    currentSubtitleUuid += 1;
+
+                    //Add to list
+                    returnValue.Add(valueToAdd);
+                }
+            }
+
+            return returnValue.ToArray();
         }
     }
 }

@@ -27,12 +27,15 @@ namespace WebMediaLink
         [Network.Attributes.PacketIgnoreProperty]
         public PlayableFile[] MediaUrls { get; set; } = new PlayableFile[0];
 
-        public GetInfoResponse(string name, string password, string imageUrl, PlayableFile[] mediaFiles, GetInfoRequest requestPacket) : base(requestPacket)
+        public string[] SubtitleFonts { get; set; } = new string[0];
+
+        public GetInfoResponse(string name, string password, string imageUrl, PlayableFile[] mediaFiles, string[] subtitleFonts, GetInfoRequest requestPacket) : base(requestPacket)
         {
             Name = name;
             Password = password;
             ImageUrl = imageUrl;
             MediaUrls = mediaFiles;
+            SubtitleFonts = subtitleFonts;
         }
 
         public override void BeforeSend()
