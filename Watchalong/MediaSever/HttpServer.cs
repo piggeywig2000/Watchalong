@@ -239,6 +239,7 @@ namespace MediaSever
                 fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 bytesLeft = fileStream.Length;
                 response.AddHeader("Accept-Ranges", "bytes");
+                response.AddHeader("Access-Control-Allow-Origin", "*");
 
                 //Check for a provided range
                 if (!string.IsNullOrEmpty(request.Headers["Range"]))

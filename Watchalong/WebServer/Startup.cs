@@ -50,19 +50,6 @@ namespace WebServer
                 ContentTypeProvider = provider
             });
 
-            /*app.UseStaticFiles(new StaticFileOptions 
-            {
-                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-                    Path.Join(Directory.GetCurrentDirectory(), "wwwroot", "lib", "JavascriptSubtitlesOctopus", "dist")),
-                RequestPath = "/lib/JavascriptSubtitlesOctopus/dist"
-            });*/
-            /*app.UseStaticFiles(new StaticFileOptions
-            {
-                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-                    Path.Join(@"D:\My Files\Documents\teast")),
-                RequestPath = "/STATIC"
-            });*/
-
             app.UseRouting();
 
             app.UseAuthorization();
