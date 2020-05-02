@@ -242,11 +242,6 @@ namespace MediaSever
 
             string[] filesFound = Directory.GetFiles(MediaFilesPath, "*.*", SearchOption.TopDirectoryOnly);
 
-            //Delete and create the subtitles folder
-            if (Directory.Exists(SubtitleFilesPath))
-                Directory.Delete(SubtitleFilesPath, true);
-            Directory.CreateDirectory(SubtitleFilesPath);
-
             //Repopulate playable file array
             List<PlayableFile> newMediaFiles = new List<PlayableFile>();
 
@@ -282,8 +277,6 @@ namespace MediaSever
                 //Check if it's audio or video
                 MediaInfoWrapper wrapper = new MediaInfoWrapper(file);
 
-                //Ffmpeg command: ffmpeg -hide_banner -loglevel panic -i "Place to Place - S01E01 - Here ⇔ There_S01E01.mkv" -map 0:2 -f s16le -scodec ass pipe:1
-
                 //Check that we have media
                 if (wrapper.AudioStreams.Count == 0 && wrapper.VideoStreams.Count == 0)
                 {
@@ -292,28 +285,14 @@ namespace MediaSever
 
                 string fileName = Path.GetFileName(file);
 
-                //Get the subtitles
-                SubtitleInfo[] subtitles;
-                if (wrapper.HasSubtitles)
-                {
-                    //Extract fonts
-                    ExtractAllFonts(file);
-                    subtitles = ExtractAllSubtitles(file, wrapper.Subtitles.ToList());
-                }
-                else
-                {
-                    subtitles = new SubtitleInfo[0];
-
-                }
-
                 //We have media. Check if it's audio or video
                 if (wrapper.HasVideo)
                 {
-                    newMediaFiles.Add(new PlayableFile("http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, "", fileName, subtitles, wrapper.Duration / 1000.0, true, FileType.Offline));
+                    newMediaFiles.Add(new PlayableFile("http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, "", fileName, new SubtitleInfo[0], wrapper.Duration / 1000.0, true, FileType.Offline));
                 }
                 else
                 {
-                    newMediaFiles.Add(new PlayableFile("", "http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, fileName, subtitles, wrapper.Duration / 1000.0, true, FileType.Offline));
+                    newMediaFiles.Add(new PlayableFile("", "http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, fileName, new SubtitleInfo[0], wrapper.Duration / 1000.0, true, FileType.Offline));
                 }
             }
 
@@ -349,7 +328,9 @@ namespace MediaSever
 
             if (hasAnythingChanged)
             {
-                ConLog.Log("HTTP Server", "Scan complete and the available files has changed", LogType.Ok);
+                ConLog.Log("HTTP Server", "Scan complete and the available files has changed. Extracting subtitles and fonts", LogType.Ok);
+                ExtractAllSubtitlesAndFontsForAllMediaFiles();
+                ConLog.Log("HTTP Server", "Subtitles and fonts extracted", LogType.Ok);
             }
             else
             {
@@ -512,6 +493,65 @@ namespace MediaSever
         }
 
         /// <summary>
+        /// Extract all the fonts and subtitles from all media files
+        /// </summary>
+        private void ExtractAllSubtitlesAndFontsForAllMediaFiles()
+        {
+            //Delete and recreate incomplete folder
+            if (Directory.Exists(SubtitleFilesPath + "/incomplete"))
+                Directory.Delete(SubtitleFilesPath + "/incomplete", true);
+            Directory.CreateDirectory(SubtitleFilesPath + "/incomplete");
+
+            foreach (PlayableFile file in Files)
+            {
+                if (file.Type != FileType.Offline) continue;
+
+                //Get the file path
+                string fileName;
+                if (!string.IsNullOrEmpty(file.VideoUrl))
+                    fileName = Path.GetFileName(file.VideoUrl);
+                else
+                    fileName = Path.GetFileName(file.AudioUrl);
+
+                string filePath = MediaFilesPath + "/" + fileName;
+
+                //Get the subtitles
+                MediaInfoWrapper wrapper = new MediaInfoWrapper(filePath);
+
+                if (wrapper.HasSubtitles)
+                {
+                    //Extract fonts
+                    ExtractAllFonts(filePath);
+                    file.Subtitles = ExtractAllSubtitles(filePath, wrapper.Subtitles.ToList());
+                }
+                else
+                {
+                    file.Subtitles = new SubtitleInfo[0];
+                }
+            }
+
+            //Remove files from main folder
+            string[] oldFiles = Directory.GetFiles(SubtitleFilesPath);
+            foreach (string file in oldFiles)
+            {
+                File.Delete(file);
+            }
+
+            //Copy incomplete folder into main folder
+            string[] newFiles = Directory.GetFiles(SubtitleFilesPath + "/incomplete");
+            foreach (string file in newFiles)
+            {
+                File.Copy(file, SubtitleFilesPath + "/" + Path.GetFileName(file));
+            }
+
+            //Delete incomplete folder
+            Directory.Delete(SubtitleFilesPath + "/incomplete", true);
+
+            //Set the HTTP server's arrays
+            SetHttpServerFiles();
+        }
+
+        /// <summary>
         /// Extracts all the fonts from the media file
         /// </summary>
         /// <param name="mediaFilePath">The media file to extract fonts from</param>
@@ -523,8 +563,8 @@ namespace MediaSever
             extractProcess.StartInfo = new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = "-y -hide_banner -loglevel panic -dump_attachment:t \"\" -i \"" + mediaFilePath + "\"",
-                WorkingDirectory = SubtitleFilesPath
+                Arguments = "-n -hide_banner -loglevel panic -dump_attachment:t \"\" -i \"" + mediaFilePath + "\"",
+                WorkingDirectory = SubtitleFilesPath + "/incomplete"
             };
             extractProcess.Start();
             extractProcess.WaitForExit();
@@ -562,7 +602,7 @@ namespace MediaSever
                     extractProcess.StartInfo = new ProcessStartInfo()
                     {
                         FileName = "ffmpeg",
-                        Arguments = "-y -hide_banner -loglevel panic -i \"" + mediaFilePath + "\" -map 0:" + stream.StreamNumber + " \"" + SubtitleFilesPath + "/" + currentSubtitleUuid.ToString() + ".ass" + "\"",
+                        Arguments = "-y -hide_banner -loglevel panic -i \"" + mediaFilePath + "\" -map 0:" + stream.StreamNumber + " \"" + SubtitleFilesPath + "/incomplete/" + currentSubtitleUuid.ToString() + ".ass" + "\"",
                         WorkingDirectory = SubtitleFilesPath
                     };
                     extractProcess.Start();

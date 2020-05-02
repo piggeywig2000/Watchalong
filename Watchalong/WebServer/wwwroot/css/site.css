@@ -140,6 +140,19 @@ i.right-margin {
     display: none;
 }
 
+.ui-progressbar {
+    height: 100%;
+    border-radius: 200px;
+    overflow-x: hidden;
+    background-color: var(--background-tertiary);
+}
+
+    .ui-progressbar .ui-progressbar-value {
+        height: 100%;
+        border-radius: 200px;
+        background-color: var(--interactive-normal);
+    }
+
 .hidden {
     display: none;
 }

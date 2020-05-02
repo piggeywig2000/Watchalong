@@ -39,10 +39,17 @@
     </div>
 
     <div id="settings">
-        <label for="subtitle-track">Subtitle Track:</label>
+        <label for="subtitle-track" id="subtitle-track-label">Subtitle Track:</label>
         <select name="subtitle-track" id="subtitle-track">
             <option selected>Disabled</option>
         </select>
+
+        <label for="local-file" id="local-file-label">Use local file instead of streaming on the fly:</label>
+        <input name="local-file" id="local-file" type="file" />
+        <div id="local-file-status-container">
+            <p id="local-file-status">Streaming on the fly</p>
+            <div id="local-file-progress" class="hidden"></div>
+        </div>
     </div>
 </div>
 
@@ -188,5 +195,6 @@
 
 @section Scripts {
     <script src="~/lib/JavascriptSubtitlesOctopus/dist/subtitles-octopus.js"></script>
+    <script src="~/lib/crypto-js/crypto-js.js"></script>
     <script src="~/js/watch.js"></script>
 }

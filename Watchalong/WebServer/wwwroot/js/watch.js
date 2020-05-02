@@ -186,6 +186,98 @@ $("#subtitle-track").change(function () {
     }
 });
 
+//Local file selection
+$("#local-file").change(function () {
+    var file = this.files[0];
+
+    setLocalFile(file);
+});
+
+//Progressbar
+$("#local-file-progress").progressbar();
+
+//Local file hashing
+var currentFile = null;
+function setLocalFile(file) {
+    currentFile = file;
+
+    $("#local-file-progress").progressbar("option", "value", 0);
+
+    if (file == null) {
+        $("#local-file-progress").addClass("hidden");
+        $("#local-file-status").text("Streaming on the fly");
+        return;
+    }
+
+    //Generate sha1 hash
+    $("#local-file-progress").removeClass("hidden");
+    $("#local-file-status").text("Checking hash...");
+    var sha1 = CryptoJS.algo.SHA1.create();
+    var currentOffset = 0;
+    lastOffset = 0;
+
+    loading(file,
+        function (data) {
+            var wordBuffer = CryptoJS.lib.WordArray.create(data);
+            sha1.update(wordBuffer);
+            currentOffset += data.byteLength;
+            var percentage = ((currentOffset / file.size) * 100);
+            console.log(percentage.toFixed(0) + '%');
+            $("#local-file-progress").progressbar("option", "value", percentage);
+        }, function (data) {
+            console.log('100%');
+            $("#local-file-progress").progressbar("option", "value", 100);
+            var encrypted = sha1.finalize().toString();
+            console.log('encrypted: ' + encrypted);
+            $("#local-file-progress").addClass("hidden");
+    });
+}
+
+function loading(file, callbackProgress, callbackFinal) {
+    var chunkSize = 1024 * 1024 * 1; //Buffer is 1mb
+    var offset = 0;
+    var size = chunkSize;
+    var partial;
+    var index = 0;
+
+    if (file.size === 0) {
+        callbackFinal();
+    }
+    while (offset < file.size) {
+        partial = file.slice(offset, offset + size);
+        var reader = new FileReader;
+        reader.size = chunkSize;
+        reader.offset = offset;
+        reader.index = index;
+        reader.onload = function (evt) {
+            callbackRead(this, file, evt, callbackProgress, callbackFinal);
+        };
+        reader.readAsArrayBuffer(partial);
+        offset += chunkSize;
+        index += 1;
+    }
+}
+
+var lastOffset;
+function callbackRead(reader, file, evt, callbackProgress, callbackFinal) {
+    //If this file is not the current file, cancel
+    if (currentFile != file) return;
+
+    if (lastOffset === reader.offset) {
+        // in order chunk
+        lastOffset = reader.offset + reader.size;
+        callbackProgress(evt.target.result);
+        if (reader.offset + reader.size >= file.size) {
+            callbackFinal();
+        }
+    } else {
+        // not in order chunk
+        timeout = setTimeout(function () {
+            callbackRead(reader, file, evt, callbackProgress, callbackFinal);
+        }, 10);
+    }
+}
+
 //Volume slider
 $("#volume-slider").slider({
     min: 0,
@@ -251,13 +343,15 @@ document.addEventListener("fullscreenchange", function () {
     if (isFullscreen) {
         $("#video-content").addClass("fullscreen");
         $("#controls-container").addClass("fullscreen-controls");
+        $(".libassjs-canvas-parent").addClass("fullscreen-subtitles");
         $("#fullscreen-button").removeClass("expand-button");
         $("#fullscreen-button").addClass("compress-button");
 
         //Hide stuff
         $("#controls-container").addClass("hidden");
         $("#header").addClass("hidden");
-        $("#video-title").addClass("hidden");
+        $("#video-top-bar").addClass("hidden");
+        $("#userlist-container").addClass("hidden");
         $("#queue-files-container").addClass("hidden");
 
         clearInterval(resizeInterval);
@@ -265,13 +359,15 @@ document.addEventListener("fullscreenchange", function () {
     else {
         $("#video-content").removeClass("fullscreen");
         $("#controls-container").removeClass("fullscreen-controls");
+        $(".libassjs-canvas-parent").removeClass("fullscreen-subtitles");
         $("#fullscreen-button").removeClass("compress-button");
         $("#fullscreen-button").addClass("expand-button");
 
         //Unhide stuff
         $("#controls-container").removeClass("hidden");
         $("#header").removeClass("hidden");
-        $("#video-title").removeClass("hidden");
+        $("#video-top-bar").removeClass("hidden");
+        $("#userlist-container").removeClass("hidden");
         $("#queue-files-container").removeClass("hidden");
 
         resizeInterval = setInterval(recalculateHeight, 100);

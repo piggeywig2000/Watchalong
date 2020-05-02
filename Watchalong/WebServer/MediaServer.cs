@@ -307,6 +307,7 @@ namespace WebServer
                 {
                     file.Title = outputFile.Title;
                     file.IsAvailable = outputFile.IsAvailable;
+                    file.Subtitles = outputFile.Subtitles;
                     filesToAdd.Remove(outputFile);
                 }
                 //File was not found. Remove it
@@ -345,8 +346,8 @@ namespace WebServer
             {
                 ResetPlayback();
                 FakeState = FakingState.NotFaking;
-                await UpdateBufferStateAndSendStateUpdate();
             }
+            await UpdateBufferStateAndSendStateUpdate();
 
             ConLog.Log("WebMedia link", "Updated available files on " + Name, LogType.Ok);
         }
