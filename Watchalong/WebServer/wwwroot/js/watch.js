@@ -212,70 +212,39 @@ function setLocalFile(file) {
     //Generate sha1 hash
     $("#local-file-progress").removeClass("hidden");
     $("#local-file-status").text("Checking hash...");
-    var sha1 = CryptoJS.algo.SHA1.create();
-    var currentOffset = 0;
-    lastOffset = 0;
 
-    loading(file,
-        function (data) {
-            var wordBuffer = CryptoJS.lib.WordArray.create(data);
-            sha1.update(wordBuffer);
-            currentOffset += data.byteLength;
-            var percentage = ((currentOffset / file.size) * 100);
+    var hashWorker = new Worker("/js/generate-sha1-worker.js");
+
+    //When we receive a message
+    hashWorker.onmessage = function (e) {
+        //Check if it's a progress or complete
+        var type = e.data[0];
+        var workerFile = e.data[1];
+        var messageData = e.data[2];
+
+        //If the worker's file doesn't match the current file, terminate it
+        if (currentFile == null || (workerFile.name != currentFile.name || workerFile.size != currentFile.size || workerFile.lastModified != currentFile.lastModified)) {
+            this.terminate();
+            return;
+        }
+
+        //If it's a progress update, update the controls
+        if (type == "progress") {
+            var percentage = ((messageData / workerFile.size) * 100);
             console.log(percentage.toFixed(0) + '%');
             $("#local-file-progress").progressbar("option", "value", percentage);
-        }, function (data) {
-            console.log('100%');
-            $("#local-file-progress").progressbar("option", "value", 100);
-            var encrypted = sha1.finalize().toString();
-            console.log('encrypted: ' + encrypted);
-            $("#local-file-progress").addClass("hidden");
-    });
-}
-
-function loading(file, callbackProgress, callbackFinal) {
-    var chunkSize = 1024 * 1024 * 1; //Buffer is 1mb
-    var offset = 0;
-    var size = chunkSize;
-    var partial;
-    var index = 0;
-
-    if (file.size === 0) {
-        callbackFinal();
-    }
-    while (offset < file.size) {
-        partial = file.slice(offset, offset + size);
-        var reader = new FileReader;
-        reader.size = chunkSize;
-        reader.offset = offset;
-        reader.index = index;
-        reader.onload = function (evt) {
-            callbackRead(this, file, evt, callbackProgress, callbackFinal);
-        };
-        reader.readAsArrayBuffer(partial);
-        offset += chunkSize;
-        index += 1;
-    }
-}
-
-var lastOffset;
-function callbackRead(reader, file, evt, callbackProgress, callbackFinal) {
-    //If this file is not the current file, cancel
-    if (currentFile != file) return;
-
-    if (lastOffset === reader.offset) {
-        // in order chunk
-        lastOffset = reader.offset + reader.size;
-        callbackProgress(evt.target.result);
-        if (reader.offset + reader.size >= file.size) {
-            callbackFinal();
         }
-    } else {
-        // not in order chunk
-        timeout = setTimeout(function () {
-            callbackRead(reader, file, evt, callbackProgress, callbackFinal);
-        }, 10);
+        //If it's a complete update, terminate and compare hash
+        else if (type == "complete") {
+            this.terminate();
+            console.log('encrypted: ' + messageData);
+            $("#local-file-progress").addClass("hidden");
+            //Do document.getElementById("local-file").value = null to clear the choose file thingy
+        }
     }
+
+    //Pass it the file
+    hashWorker.postMessage(file);
 }
 
 //Volume slider

@@ -120,6 +120,7 @@
 #local-file {
     display: block;
     width: 100%;
+    font-family: inherit;
 }
 #local-file-status-container {
     height: 14px;
