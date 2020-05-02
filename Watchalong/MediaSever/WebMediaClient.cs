@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -252,7 +253,7 @@ namespace MediaSever
                 {
                     if (File.Exists(DownloadFilesPath + "\\" + Path.GetFileName(file.VideoUrl)) || File.Exists(DownloadFilesPath + "\\" + Path.GetFileName(file.AudioUrl)))
                     {
-                        newMediaFiles.Add(new PlayableFile(file.VideoUrl, file.AudioUrl, file.Title, file.Subtitles, file.Duration, true, FileType.Downloaded));
+                        newMediaFiles.Add(new PlayableFile(file.VideoUrl, file.AudioUrl, file.Title, file.Sha1, file.Subtitles, file.Duration, true, FileType.Downloaded));
                         if (!file.IsAvailable)
                         {
                             hasAnythingChanged = true;
@@ -288,18 +289,18 @@ namespace MediaSever
                 //We have media. Check if it's audio or video
                 if (wrapper.HasVideo)
                 {
-                    newMediaFiles.Add(new PlayableFile("http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, "", fileName, new SubtitleInfo[0], wrapper.Duration / 1000.0, true, FileType.Offline));
+                    newMediaFiles.Add(new PlayableFile("http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, "", fileName, null, new SubtitleInfo[0], wrapper.Duration / 1000.0, true, FileType.Offline));
                 }
                 else
                 {
-                    newMediaFiles.Add(new PlayableFile("", "http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, fileName, new SubtitleInfo[0], wrapper.Duration / 1000.0, true, FileType.Offline));
+                    newMediaFiles.Add(new PlayableFile("", "http://" + MediaserverIp + ":" + MediaserverPort + "/media/" + fileName, fileName, null, new SubtitleInfo[0], wrapper.Duration / 1000.0, true, FileType.Offline));
                 }
             }
 
             //Check if this differs from the old one
             foreach(PlayableFile file in newMediaFiles)
             {
-                bool matchFound = false;
+                PlayableFile matchFound = null;
 
                 foreach(PlayableFile possibleMatch in Files)
                 {
@@ -309,14 +310,34 @@ namespace MediaSever
                         file.Duration == possibleMatch.Duration && 
                         file.IsAvailable == possibleMatch.IsAvailable)
                     {
-                        matchFound = true;
+                        matchFound = possibleMatch;
                     }
                 }
 
                 //If we didn't find a match, something has changed
-                if (!matchFound)
+                if (matchFound == null)
                 {
                     hasAnythingChanged = true;
+
+                    //If it's not a download, generate a sha1 hash
+                    if (file.Type == FileType.Offline)
+                    {
+                        //Get the file path
+                        string fileName;
+                        if (!string.IsNullOrEmpty(file.VideoUrl))
+                            fileName = Path.GetFileName(file.VideoUrl);
+                        else
+                            fileName = Path.GetFileName(file.AudioUrl);
+
+                        string filePath = MediaFilesPath + "/" + fileName;
+
+                        file.Sha1 = GenerateSha1OfFile(filePath);
+                    }
+                }
+                //If we did find a match, copy the sha1 hash
+                else
+                {
+                    file.Sha1 = matchFound.Sha1;
                 }
             }
             if (newMediaFiles.Count != Files.Count) hasAnythingChanged = true;
@@ -328,7 +349,7 @@ namespace MediaSever
 
             if (hasAnythingChanged)
             {
-                ConLog.Log("HTTP Server", "Scan complete and the available files has changed. Extracting subtitles and fonts", LogType.Ok);
+                ConLog.Log("HTTP Server", "Scan complete and the available files has changed.  Extracting subtitles and fonts from all media files", LogType.Ok);
                 ExtractAllSubtitlesAndFontsForAllMediaFiles();
                 ConLog.Log("HTTP Server", "Subtitles and fonts extracted", LogType.Ok);
             }
@@ -460,7 +481,7 @@ namespace MediaSever
                 httpAudioUrl = "http://" + MediaserverIp + ":" + MediaserverPort + "/download/" + uuid + "." + info.Extension;
             }
 
-            PlayableFile newFile = new PlayableFile(httpVideoUrl, httpAudioUrl, info.Title, new SubtitleInfo[0], info.Duration, false, FileType.Downloaded);
+            PlayableFile newFile = new PlayableFile(httpVideoUrl, httpAudioUrl, info.Title, null, new SubtitleInfo[0], info.Duration, false, FileType.Downloaded);
 
             //Add it to the list of files
             Files.Add(newFile);
@@ -490,6 +511,55 @@ namespace MediaSever
 
             //Return whether it was success
             return isSuccess;
+        }
+
+        /// <summary>
+        /// Generate hashes for all files
+        /// </summary>
+        private void GenerateSha1ForAllFiles()
+        {
+            foreach (PlayableFile file in Files)
+            {
+                if (!file.IsAvailable) continue;
+
+                //Get the file path
+                string fileName;
+                string filePath = "";
+                if (!string.IsNullOrEmpty(file.VideoUrl))
+                    fileName = Path.GetFileName(file.VideoUrl);
+                else
+                    fileName = Path.GetFileName(file.AudioUrl);
+
+                if (file.Type == FileType.Offline)
+                    filePath = MediaFilesPath + "/" + fileName;
+                else if (file.Type == FileType.Downloaded)
+                    filePath = DownloadFilesPath + "/" + fileName;
+
+                file.Sha1 = GenerateSha1OfFile(filePath);
+            }
+        }
+
+        /// <summary>
+        /// Get the sha1 hash of a particular file
+        /// </summary>
+        /// <param name="path">The path to the file</param>
+        /// <returns>The Sha1 hash of the file</returns>
+        private string GenerateSha1OfFile(string path)
+        {
+            using (FileStream stream = File.OpenRead(path))
+            {
+                using (SHA1Managed sha1 = new SHA1Managed())
+                {
+                    byte[] sha1Bytes = sha1.ComputeHash(stream);
+
+                    StringBuilder sb = new StringBuilder();
+                    foreach (byte b in sha1Bytes)
+                    {
+                        sb.Append(b.ToString("X2"));
+                    }
+                    return sb.ToString();
+                }
+            }
         }
 
         /// <summary>

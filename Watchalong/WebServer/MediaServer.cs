@@ -189,7 +189,7 @@ namespace WebServer
             //Set the files
             foreach(PlayableFile file in response.MediaUrls)
             {
-                ServerFile fileToAdd = new ServerFile(file.VideoUrl, file.AudioUrl, file.Title, file.Subtitles, file.Duration, file.IsAvailable, FileType.Offline);
+                ServerFile fileToAdd = new ServerFile(file.VideoUrl, file.AudioUrl, file.Title, file.Sha1, file.Subtitles, file.Duration, file.IsAvailable, FileType.Offline);
                 Files.Add(fileToAdd.UUID, fileToAdd);
             }
 
@@ -285,7 +285,7 @@ namespace WebServer
             //Add the files in the response to the filesToAdd
             foreach (PlayableFile file in response.MediaUrls)
             {
-                filesToAdd.Add(new ServerFile(file.VideoUrl, file.AudioUrl, file.Title, file.Subtitles, file.Duration, file.IsAvailable, file.Type));
+                filesToAdd.Add(new ServerFile(file.VideoUrl, file.AudioUrl, file.Title, file.Sha1, file.Subtitles, file.Duration, file.IsAvailable, file.Type));
             }
 
             //Iterate over our current 
@@ -307,6 +307,7 @@ namespace WebServer
                 {
                     file.Title = outputFile.Title;
                     file.IsAvailable = outputFile.IsAvailable;
+                    file.Sha1 = outputFile.Sha1;
                     file.Subtitles = outputFile.Subtitles;
                     filesToAdd.Remove(outputFile);
                 }
@@ -522,6 +523,7 @@ namespace WebServer
                 info.CurrentAudioPath = currentFile.AudioUrl;
                 info.MediaTitle = currentFile.Title;
                 info.Duration = currentFile.Duration;
+                info.CurrentSha1 = currentFile.Sha1;
 
                 //Add subtitles
                 info.Subtitles = new SignalR.Server.Subtitle[currentFile.Subtitles.Length];

@@ -43,6 +43,11 @@ namespace WebServer.SignalR.Server
         public double LastSeekPosition { get; set; } = 0;
 
         /// <summary>
+        /// The sha1 hash of the current file
+        /// </summary>
+        public string CurrentSha1 { get; set; }
+
+        /// <summary>
         /// The available subtitles for the currently playing media
         /// </summary>
         public Subtitle[] Subtitles { get; set; } = new Subtitle[0];

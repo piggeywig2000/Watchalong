@@ -2,11 +2,14 @@
 var videoPlayer = document.getElementById("video-content");
 var audioPlayer = document.getElementById("audio-content");
 var currentMediaUuid = null;
+var currentAudioUrl = null;
+var currentVideoUrl = null;
 var duration = 0;
 var isPlaying = false;
 var lastSeekPosition = 0;
 var isBuffering = false;
 var queue = [];
+var currentSha1 = null;
 var subtitleFonts = [];
 var subtitles = [];
 var subtitleInstance = null;
@@ -199,13 +202,29 @@ $("#local-file-progress").progressbar();
 //Local file hashing
 var currentFile = null;
 function setLocalFile(file) {
+    function changeMediaPlayerToFile(file) {
+        $("#local-file-progress").addClass("hidden");
+        if (file == null) {
+            $("#local-file-status").text("Streaming on the fly");
+            $("#local-file")[0].value = null
+
+            //Set video and audio path
+            $("#video-content").attr("src", currentVideoUrl);
+            $("#audio-content").attr("src", currentAudioUrl);
+        }
+        else {
+            $("#local-file-status").text("Using local file");
+
+            activeMediaObj.src = URL.createObjectURL(file);
+        }
+    }
+
     currentFile = file;
 
     $("#local-file-progress").progressbar("option", "value", 0);
 
     if (file == null) {
-        $("#local-file-progress").addClass("hidden");
-        $("#local-file-status").text("Streaming on the fly");
+        changeMediaPlayerToFile(null);
         return;
     }
 
@@ -240,6 +259,16 @@ function setLocalFile(file) {
             console.log('encrypted: ' + messageData);
             $("#local-file-progress").addClass("hidden");
             //Do document.getElementById("local-file").value = null to clear the choose file thingy
+            //If the hashes match, use this file
+            if (messageData.toUpperCase() == currentSha1) {
+                changeMediaPlayerToFile(workerFile);
+                console.log("Changing to use local file");
+            }
+            else {
+                changeMediaPlayerToFile(null);
+                $("#local-file-status").text("Error: Files don't match");
+                console.log("Changing to stream from server");
+            }
         }
     }
 
@@ -499,7 +528,8 @@ connection.on("CurrentStateUpdated", function (jsonData) {
         }
     });
 
-    //Update the fonts
+    //Update the fonts and sha1
+    currentSha1 = data.CurrentSha1;
     subtitleFonts = data.SubtitleFonts;
 
     //Update the media information. If anything changes, we need to send a user state update
@@ -558,9 +588,12 @@ connection.on("CurrentStateUpdated", function (jsonData) {
             }
         }
 
-        //Set video and audio path
-        $("#video-content").attr("src", data.CurrentVideoPath);
-        $("#audio-content").attr("src", data.CurrentAudioPath);
+        //Set global variables for current urls
+        currentVideoUrl = data.CurrentVideoPath;
+        currentAudioUrl = data.CurrentAudioPath;
+
+        //Changing local file to null will change the path
+        setLocalFile(null);
 
         //Set volume
         activeMediaObj.volume = $("#volume-slider").slider("option", "value") / 100;
@@ -582,7 +615,6 @@ connection.on("CurrentStateUpdated", function (jsonData) {
         lastSeekPosition = 0;
         $("#playpause-button").removeClass("pause-button");
         $("#playpause-button").addClass("play-button");
-        UpdatePositionSlider();
 
         //Update the seek bar
         UpdatePositionSlider();
